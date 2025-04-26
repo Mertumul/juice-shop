@@ -1,4 +1,4 @@
-name: 🧃 Juice Shop - SBOM & Semgrep & Gitleaks Scan & Dummy Deploy
+name: 🧃 Juice Shop - SBOM, Semgrep & Gitleaks Scan
 
 on:
   workflow_dispatch:
@@ -77,31 +77,38 @@ jobs:
         docker run --rm \
           -v "${{ github.workspace }}:/repo" \
           ghcr.io/gitleaks/gitleaks:v8.24.3 \
-          detect --redact --exit-code=2 --report-format=sarif --report-path=results.sarif --log-level=debug || true  # Hata olsa da devam etmesi için '|| true' ekledik
+          detect --redact --exit-code=2 --report-format=sarif --report-path=/repo/results.sarif --log-level=debug || true  # Hata olsa da devam etmesi için '|| true' ekledik
+
+    - name: 💾 Check if SARIF file exists
+      run: |
+        echo "🔍 Checking if SARIF file exists..."
+        if [ ! -f /repo/results.sarif ]; then
+          echo "🔴 Gitleaks SARIF report not found!"
+          exit 1
+        fi
+        echo "✅ Gitleaks SARIF report found."
 
     - name: ☁️ Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: results.sarif
+        sarif_file: /repo/results.sarif
 
     - name: 📦 Upload Gitleaks SARIF as artifact
       uses: actions/upload-artifact@v4
       with:
         name: gitleaks-sarif
-        path: results.sarif
+        path: /repo/results.sarif
 
   dummy-deploy:
     name: 🚀 Dummy Deploy
     runs-on: ubuntu-latest
+    continue-on-error: true  # Hata olsa da devam etmesini sağlar
 
     steps:
     - name: 📥 Checkout source
       uses: actions/checkout@v3
 
-    - name: 🚀 Deploy to Dummy Environment
+    - name: 🏗️ Dummy deploy
       run: |
-        echo "🚀 Deploying Juice Shop to Dummy Environment..."
-        echo "Deployment Completed Successfully!"
-
-    - name: 💬 Print deployment success message
-      run: echo "🔔 The dummy deploy is complete. Deployment was successful!"
+        echo "Deploying the Juice Shop Application..."  # Burada deploy komutunuzu çalıştırabilirsiniz
+        echo "🟢 Dummy Deploy completed!"
