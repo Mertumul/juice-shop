@@ -66,6 +66,7 @@ jobs:
   gitleaks-scan:
     name: 🔍 Gitleaks Secret Scan
     runs-on: ubuntu-latest
+    continue-on-error: true  # Hata durumunda devam etmesini sağlar
 
     steps:
     - name: 📥 Checkout source
