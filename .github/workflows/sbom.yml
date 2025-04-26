@@ -1,0 +1,35 @@
+name: Build and Generate SBOM
+
+on:
+  workflow_dispatch:  # Elle çalıştırmak için
+
+jobs:
+  build-and-sbom:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: |
+        npm install
+
+    - name: Install Syft
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+    - name: Generate SBOM
+      run: |
+        syft dir:. -o spdx-json > sbom.json
+
+    - name: Upload SBOM as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom
+        path: sbom.json
