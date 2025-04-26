@@ -72,11 +72,13 @@ jobs:
     - name: 📥 Checkout source
       uses: actions/checkout@v3
 
-    - name: 🚨 Run Gitleaks
-      uses: gitleaks/gitleaks-action@v2
-      with:
-        config-path: ""  # Varsayılan kurallarla tarar
-        args: "--report-format sarif --report-path gitleaks-results.sarif"
+    - name: 🚨 Run Gitleaks with environment variables
+      env:
+        GITLEAKS_REPORT_FORMAT: sarif
+        GITLEAKS_REPORT_PATH: gitleaks-results.sarif
+        GITLEAKS_LOG_LEVEL: debug
+      run: |
+        gitleaks detect --redact --exit-code=2 --report-format $GITLEAKS_REPORT_FORMAT --report-path $GITLEAKS_REPORT_PATH --log-level $GITLEAKS_LOG_LEVEL
 
     - name: ☁️ Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
