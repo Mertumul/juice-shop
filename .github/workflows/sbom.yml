@@ -72,6 +72,10 @@ jobs:
     - name: 📥 Checkout source
       uses: actions/checkout@v3
 
+    - name: 🔧 Install Gitleaks
+      run: |
+        curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks-linux-amd64-v8.24.3.tar.gz | tar xz -C /usr/local/bin
+
     - name: 🚨 Run Gitleaks with environment variables
       env:
         GITLEAKS_REPORT_FORMAT: sarif
