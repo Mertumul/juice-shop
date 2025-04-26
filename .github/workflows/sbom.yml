@@ -66,7 +66,7 @@ jobs:
   gitleaks-scan:
     name: 🔍 Gitleaks Secret Scan
     runs-on: ubuntu-latest
-    continue-on-error: true  # Hata durumunda devam etmesini sağlar
+    continue-on-error: true  # Hata olsa bile devam etmesini sağlar
 
     steps:
     - name: 📥 Checkout source
@@ -75,7 +75,7 @@ jobs:
     - name: 🚨 Run Gitleaks
       uses: gitleaks/gitleaks-action@v2
       with:
-        config-path: ""  # varsayılan kurallarla tarar
+        config-path: ""  # Varsayılan kurallarla tarar
         args: "--report-format sarif --report-path gitleaks-results.sarif"
 
     - name: ☁️ Upload SARIF to GitHub Security
