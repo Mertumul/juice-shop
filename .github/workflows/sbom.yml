@@ -6,6 +6,8 @@ on:
 jobs:
   docker-sbom-sast:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # SARIF yüklemek için gerekli!
 
     steps:
     - name: Checkout source
@@ -32,16 +34,17 @@ jobs:
         name: sbom
         path: sbom.json
 
-    - name: Install Semgrep
+    - name: Install Semgrep (step by step)
       run: |
-        curl -sL https://semgrep.dev/install.sh | sh
+        curl -sL https://semgrep.dev/install.sh -o install.sh
+        chmod +x install.sh
+        ./install.sh
 
-    - name: Run Semgrep scan
+    - name: Run Semgrep scan (SARIF output)
       run: |
-        ./semgrep/semgrep scan --config auto --output semgrep-results.json --json
+        ./semgrep/semgrep scan --config auto --output semgrep-results.sarif --sarif
 
-    - name: Upload Semgrep results
-      uses: actions/upload-artifact@v4
+    - name: Upload SARIF to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
       with:
-        name: semgrep-results
-        path: semgrep-results.json
+        sarif_file: semgrep-results.sarif
