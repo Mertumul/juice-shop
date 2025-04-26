@@ -1,10 +1,10 @@
-name: Build Docker Image and Generate SBOM
+name: Build Docker Image, Generate SBOM & Run Semgrep
 
 on:
   workflow_dispatch:
 
 jobs:
-  docker-build-and-sbom:
+  docker-sbom-sast:
     runs-on: ubuntu-latest
 
     steps:
@@ -13,9 +13,6 @@ jobs:
 
     - name: Set up Docker
       uses: docker/setup-buildx-action@v3
-
-    - name: Log in to DockerHub (anonymous)
-      run: echo "No login needed for local build"
 
     - name: Build Juice Shop Docker Image
       run: |
@@ -34,3 +31,17 @@ jobs:
       with:
         name: sbom
         path: sbom.json
+
+    - name: Install Semgrep
+      run: |
+        curl -sL https://semgrep.dev/install.sh | sh
+
+    - name: Run Semgrep scan
+      run: |
+        ./semgrep/semgrep scan --config auto --output semgrep-results.json --json
+
+    - name: Upload Semgrep results
+      uses: actions/upload-artifact@v4
+      with:
+        name: semgrep-results
+        path: semgrep-results.json
