@@ -72,25 +72,20 @@ jobs:
     - name: 📥 Checkout source
       uses: actions/checkout@v3
 
-    - name: 🔧 Install Gitleaks
+    - name: 🚨 Run Gitleaks using Docker image
       run: |
-        curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks-linux-amd64-v8.24.3.tar.gz | tar xz -C /usr/local/bin
-
-    - name: 🚨 Run Gitleaks with environment variables
-      env:
-        GITLEAKS_REPORT_FORMAT: sarif
-        GITLEAKS_REPORT_PATH: gitleaks-results.sarif
-        GITLEAKS_LOG_LEVEL: debug
-      run: |
-        gitleaks detect --redact --exit-code=2 --report-format $GITLEAKS_REPORT_FORMAT --report-path $GITLEAKS_REPORT_PATH --log-level $GITLEAKS_LOG_LEVEL
+        docker run --rm \
+          -v "${{ github.workspace }}:/repo" \
+          ghcr.io/gitleaks/gitleaks:v8.24.3 \
+          detect --redact --exit-code=2 --report-format=sarif --report-path=results.sarif --log-level=debug
 
     - name: ☁️ Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: gitleaks-results.sarif
+        sarif_file: results.sarif
 
     - name: 📦 Upload Gitleaks SARIF as artifact
       uses: actions/upload-artifact@v4
       with:
         name: gitleaks-sarif
-        path: gitleaks-results.sarif
+        path: results.sarif
