@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      security-events: write  # SARIF raporu için gerekli
+      security-events: write  # Required for SARIF report
 
     steps:
     - name: 📥 Checkout source
@@ -66,7 +66,7 @@ jobs:
   gitleaks-scan:
     name: 🔍 Gitleaks Secret Scan
     runs-on: ubuntu-latest
-    continue-on-error: true  # Hata olsa bile devam etmesini sağlar
+    continue-on-error: true  # Proceed even if an error occurs
 
     steps:
     - name: 📥 Checkout source
@@ -77,19 +77,18 @@ jobs:
         docker run --rm \
           -v "${{ github.workspace }}:/repo" \
           ghcr.io/gitleaks/gitleaks:v8.24.3 \
-          detect --redact --exit-code=2 --report-format=sarif --report-path=/repo/results.sarif --log-level=debug || true  # Hata olsa da devam etmesi için '|| true' ekledik
+          detect --redact --exit-code=2 --report-format=sarif --report-path=/repo/results.sarif --log-level=debug || true  # Continue even if an error occurs
 
     - name: 💾 Check if SARIF file exists
       run: |
         echo "🔍 Checking if SARIF file exists..."
         if [ ! -f /repo/results.sarif ]; then
           echo "🔴 Gitleaks SARIF report not found!"
-        else
-          echo "✅ Gitleaks SARIF report found."
+          exit 1
         fi
+        echo "✅ Gitleaks SARIF report found."
 
-    - name: ☁️ Upload SARIF to GitHub Security (if exists)
-      if: success() && ( steps.gitleaks-scan.outputs.result == 'found' )
+    - name: ☁️ Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: /repo/results.sarif
@@ -103,30 +102,33 @@ jobs:
   zap-scan:
     name: 🔍 ZAP Security Scan
     runs-on: ubuntu-latest
-    continue-on-error: true  # Hata olsa da devam etmesini sağlar
+    continue-on-error: true  # Proceed even if an error occurs
 
     steps:
     - name: 📥 Checkout source
       uses: actions/checkout@v3
 
-    - name: 🐳 Set up ZAP Docker
+    - name: 🐳 Pull ZAP Stable Docker Image from ICTU Repository
       run: |
-        docker pull owasp/zap2docker-stable
+        docker pull ictu/zaproxy:stable
 
     - name: 🚨 Run ZAP security scan on example.com
       run: |
-        docker run -u zap -v $(pwd):/zap/wrk:rw owasp/zap2docker-stable zap-baseline.py -t http://example.com -g gen.conf -x zap-report.xml  # XML formatında rapor oluşturulacak
+        docker run --rm \
+          -v "${{ github.workspace }}:/zap/wrk:rw" \
+          ictu/zaproxy:stable \
+          zap-baseline.py -t http://example.com -g gen.conf -x /zap/wrk/zap-report.xml
 
     - name: 📦 Upload ZAP XML Report as artifact
       uses: actions/upload-artifact@v4
       with:
         name: zap-report
-        path: zap-report.xml  # XML raporu yükleniyor
+        path: /zap/wrk/zap-report.xml
 
   dummy-deploy:
     name: 🚀 Dummy Deploy
     runs-on: ubuntu-latest
-    continue-on-error: true  # Hata olsa da devam etmesini sağlar
+    continue-on-error: true  # Proceed even if an error occurs
 
     steps:
     - name: 📥 Checkout source
@@ -134,5 +136,5 @@ jobs:
 
     - name: 🏗️ Dummy deploy
       run: |
-        echo "Deploying the Juice Shop Application..."  # Burada deploy komutunuzu çalıştırabilirsiniz
+        echo "Deploying the Juice Shop Application..."  # Replace with your deploy command
         echo "🟢 Dummy Deploy completed!"
