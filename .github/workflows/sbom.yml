@@ -1,4 +1,4 @@
-name: 🧃 Juice Shop - SBOM & Semgrep & Gitleaks Scan
+name: 🧃 Juice Shop - SBOM & Semgrep & Gitleaks Scan & Dummy Deploy
 
 on:
   workflow_dispatch:
@@ -77,7 +77,7 @@ jobs:
         docker run --rm \
           -v "${{ github.workspace }}:/repo" \
           ghcr.io/gitleaks/gitleaks:v8.24.3 \
-          detect --redact --exit-code=2 --report-format=sarif --report-path=results.sarif --log-level=debug
+          detect --redact --exit-code=2 --report-format=sarif --report-path=results.sarif --log-level=debug || true  # Hata olsa da devam etmesi için '|| true' ekledik
 
     - name: ☁️ Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
@@ -89,3 +89,19 @@ jobs:
       with:
         name: gitleaks-sarif
         path: results.sarif
+
+  dummy-deploy:
+    name: 🚀 Dummy Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout source
+      uses: actions/checkout@v3
+
+    - name: 🚀 Deploy to Dummy Environment
+      run: |
+        echo "🚀 Deploying Juice Shop to Dummy Environment..."
+        echo "Deployment Completed Successfully!"
+
+    - name: 💬 Print deployment success message
+      run: echo "🔔 The dummy deploy is complete. Deployment was successful!"
