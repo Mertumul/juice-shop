@@ -1,20 +1,4 @@
-name: 🧃 Juice Shop - SBOM, Semgrep & Gitleaks Scan
-
-on:
-  workflow_dispatch:
-
-jobs:
-  build-and-sbom:
-    name: 🔧 Build Docker & Generate SBOM
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: 📥 Checkout source
-      uses: actions/checkout@v3
-
-    - name: 🐳 Set up Docker
-      uses: docker/setup-buildx-action@v3
-name: 🧃 Juice Shop - SBOM, Semgrep & Gitleaks Scan
+name: 🧃 Juice Shop - SBOM, Semgrep, Gitleaks & ZAP Scan
 
 on:
   workflow_dispatch:
@@ -116,8 +100,8 @@ jobs:
         name: gitleaks-sarif
         path: /repo/results.sarif
 
-  dummy-deploy:
-    name: 🚀 Dummy Deploy
+  zap-scan:
+    name: 🔍 ZAP Security Scan
     runs-on: ubuntu-latest
     continue-on-error: true  # Hata olsa da devam etmesini sağlar
 
@@ -125,94 +109,19 @@ jobs:
     - name: 📥 Checkout source
       uses: actions/checkout@v3
 
-    - name: 🏗️ Dummy deploy
+    - name: 🐳 Set up ZAP Docker
       run: |
-        echo "Deploying the Juice Shop Application..."  # Burada deploy komutunuzu çalıştırabilirsiniz
-        echo "🟢 Dummy Deploy completed!"
+        docker pull owasp/zap2docker-stable
 
-    - name: 🏗️ Build Juice Shop Docker Image
+    - name: 🚨 Run ZAP security scan on example.com
       run: |
-        docker build -t juice-shop-local .
+        docker run -u zap -v $(pwd):/zap/wrk:rw owasp/zap2docker-stable zap-baseline.py -t http://example.com -g gen.conf -x zap-report.xml  # XML formatında rapor oluşturulacak
 
-    - name: 🧰 Install Syft
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-
-    - name: 📦 Generate SBOM with Syft
-      run: |
-        syft juice-shop-local -o spdx-json > sbom.json
-
-    - name: ☁️ Upload SBOM as artifact
+    - name: 📦 Upload ZAP XML Report as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: sbom
-        path: sbom.json
-
-  sast-with-semgrep:
-    name: 🛡️ Semgrep SAST Scan
-    runs-on: ubuntu-latest
-
-    permissions:
-      security-events: write  # SARIF raporu için gerekli
-
-    steps:
-    - name: 📥 Checkout source
-      uses: actions/checkout@v3
-
-    - name: 🔍 Run Semgrep with Docker
-      run: |
-        docker run --rm \
-          -v "${{ github.workspace }}:/src" \
-          returntocorp/semgrep \
-          semgrep scan --config auto \
-          --sarif --output /src/semgrep-results.sarif
-
-    - name: ☁️ Upload SARIF to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: semgrep-results.sarif
-
-    - name: 📦 Upload Semgrep SARIF as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: semgrep-sarif
-        path: semgrep-results.sarif
-
-  gitleaks-scan:
-    name: 🔍 Gitleaks Secret Scan
-    runs-on: ubuntu-latest
-    continue-on-error: true  # Hata olsa bile devam etmesini sağlar
-
-    steps:
-    - name: 📥 Checkout source
-      uses: actions/checkout@v3
-
-    - name: 🚨 Run Gitleaks using Docker image
-      run: |
-        docker run --rm \
-          -v "${{ github.workspace }}:/repo" \
-          ghcr.io/gitleaks/gitleaks:v8.24.3 \
-          detect --redact --exit-code=2 --report-format=sarif --report-path=/repo/results.sarif --log-level=debug || true  # Hata olsa da devam etmesi için '|| true' ekledik
-
-    - name: 💾 Check if SARIF file exists
-      run: |
-        echo "🔍 Checking if SARIF file exists..."
-        if [ ! -f /repo/results.sarif ]; then
-          echo "🔴 Gitleaks SARIF report not found!"
-          exit 1
-        fi
-        echo "✅ Gitleaks SARIF report found."
-
-    - name: ☁️ Upload SARIF to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: /repo/results.sarif
-
-    - name: 📦 Upload Gitleaks SARIF as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: gitleaks-sarif
-        path: /repo/results.sarif
+        name: zap-report
+        path: zap-report.xml  # XML raporu yükleniyor
 
   dummy-deploy:
     name: 🚀 Dummy Deploy
